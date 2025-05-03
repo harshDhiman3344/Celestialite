@@ -1,7 +1,9 @@
+import Space from "./Components/SpaceMain/Space"
+
 
 const App = () => {
   return (
-    <div>App</div>
+    <div><Space/></div>
   )
 }
 
