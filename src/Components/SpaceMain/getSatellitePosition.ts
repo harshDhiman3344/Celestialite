@@ -7,7 +7,7 @@ export function getSatPos(tle1: string, tle2: string) {
 
   // Check if the propagation was successful
   if (!positionAndVelocity || !positionAndVelocity.position) {
-    console.error("Failed to get position from satellite propagation.");
+    
     return { lat: 0, lon: 0 }; // Return default values or handle the error accordingly
   }
 

@@ -5,10 +5,74 @@ import getStarfield from "./getStarfield.ts";
 import { getFresnelMat } from "./getFresnelMat.ts";
 import { positionf } from "./posFunc.ts";
 import { getSatPos } from "./getSatellitePosition.ts";
-import { tleData } from "./TLEdata/data.ts"
+import { tleData } from "./TLEdata/data.ts";
+import SearchBar from "../searchBar/searchbar.tsx";
+
+function createTextTexture(text: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    console.error("Failed to get 2D context for canvas.");
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  context.font = "bold 40px Arial"; // Draw big, clean text
+  context.fillStyle = "white";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  texture.minFilter = THREE.LinearFilter; // Prevent pixelation when scaled down
+  return texture;
+}
 
 const Space = () => {
+  const handleSatelliteSearch = async (name: string) => {
+    const res = await fetch(
+      `https://tle.ivanstanojevic.me/api/tle?search=${encodeURIComponent(name)}`
+    );
+    const data = await res.json();
+
+    // Corrected: 'memer' should be 'member'
+    if (data.member && data.member.length > 0) {
+      const sat = data.member[0];
+      console.log("Found satellite:", sat.name);
+     (window as any).handleSatelliteSearch(sat.name, sat.line1, sat.line2);
+    } else {
+      console.log("Not found");
+    }
+  };
+
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  function addSearchedSatellite(
+    name: string,
+    tle1: string,
+    tle2: string,
+    group: THREE.Group
+  ) {
+    const geo = new THREE.IcosahedronGeometry(0.006, 8);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Highlighted yellow
+    const marker = new THREE.Mesh(geo, mat);
+    group.add(marker);
+
+    // Add name label
+    const spriteMat = new THREE.SpriteMaterial({
+      map: createTextTexture(name),
+      transparent: true,
+    });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(0.2, 0.05, 0.2);
+    sprite.position.set(0, 0.03, 0);
+    marker.add(sprite);
+
+    return { marker, tle1, tle2 };
+  }
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -152,10 +216,15 @@ const Space = () => {
     //Satellite markers
 
     const satelliteMarkers: THREE.Mesh[] = [];
+    const searchedSatellites: {
+      marker: THREE.Mesh;
+      tle1: string;
+      tle2: string;
+    }[] = [];
     const satelliteNames: string[] = tleData.map((sat) => sat.name); // Get names from tleData
 
     tleData.forEach((satellite, index) => {
-      const geo = new THREE.IcosahedronGeometry(0.005,8);
+      const geo = new THREE.IcosahedronGeometry(0.005, 8);
       const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
       const marker = new THREE.Mesh(geo, mat);
       satelliteGroup.add(marker);
@@ -167,40 +236,20 @@ const Space = () => {
         transparent: true,
       });
       const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(0.2, 0.05, 0.2); // Looks small, but remains sharp 
+      sprite.scale.set(0.2, 0.05, 0.2); // Looks small, but remains sharp
       sprite.position.set(0, 0.03, 0); // Position it above the satellite marker
       marker.add(sprite); // Attach the sprite to the satellite marker
     });
 
-    // Function to create a canvas texture with text
-    function createTextTexture(text: string) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 128;
-    
-      const context = canvas.getContext("2d");
-      if (!context) {
-        console.error("Failed to get 2D context for canvas.");
-        return new THREE.CanvasTexture(canvas);
-      }
-    
-      context.font = "bold 40px Arial"; // Draw big, clean text
-      context.fillStyle = "white";
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillText(text, canvas.width / 2, canvas.height / 2);
-    
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      texture.minFilter = THREE.LinearFilter; // Prevent pixelation when scaled down
-      return texture;
-    }
-    
-    
+    (window as any).handleSatelliteSearch = (
+      name: string,
+      tle1: string,
+      tle2: string
+    ) => {
+      const sat = addSearchedSatellite(name, tle1, tle2, satelliteGroup);
+      searchedSatellites.push(sat);
+    };
 
-    // };
-
-    // Animation
     const animate = () => {
       requestAnimationFrame(animate);
       Earth.rotation.y += 0.002;
@@ -218,6 +267,12 @@ const Space = () => {
         satelliteMarkers[index].position.set(x, y, z);
       });
 
+      searchedSatellites.forEach((sat) => {
+        const { lat, lon } = getSatPos(sat.tle1, sat.tle2);
+        const [x, y, z] = positionf(lat, lon, 1.05);
+        sat.marker.position.set(x, y, z);
+      });
+
       // updateISS();
     };
 
@@ -230,7 +285,15 @@ const Space = () => {
     };
   }, []);
 
-  return <div ref={canvasRef} style={{ width: "100%", height: "100vh" }} />;
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100vh" }}>
+      <div ref={canvasRef} style={{ width: "100%", height: "100%" }} />
+      <SearchBar onSearch={handleSatelliteSearch} />
+    </div>
+  );
 };
 
 export default Space;
+
+
+
