@@ -31,6 +31,25 @@ function createTextTexture(text: string) {
   return texture;
 }
 
+async function fetchStarlinkTLEs() {
+  const resp = await fetch(
+    "https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle"
+  );
+  const text = await resp.text();
+  const lines = text.trim().split("\n");
+
+  const tleArray = [];
+  for (let i = 0; i < lines.length; i += 3) {
+    tleArray.push({
+      name: lines[i].trim(),
+      line1: lines[i + 1].trim(),
+      line2: lines[i + 2].trim(),
+    });
+  }
+  return tleArray;
+}
+
+
 const Space = () => {
   const handleSatelliteSearch = async (name: string) => {
     const res = await fetch(
@@ -48,6 +67,16 @@ const Space = () => {
     }
   };
 
+  const addStarlinkSatellites = async () => {
+  const starlinks = await fetchStarlinkTLEs();
+  starlinks.slice(0, 50).forEach((sat) => {
+    (window as any).starlinkAdder(sat.name, sat.line1, sat.line2);
+  });
+  console.log(`✅ Added ${starlinks.length} Starlink satellites`);
+};
+
+  addStarlinkSatellites()
+
   const canvasRef = useRef<HTMLDivElement>(null);
 
   function addSearchedSatellite(
@@ -56,8 +85,12 @@ const Space = () => {
     tle2: string,
     group: THREE.Group
   ) {
-    const geo = new THREE.IcosahedronGeometry(0.006, 8);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Highlighted yellow
+    const geo = new THREE.IcosahedronGeometry(0.008, 8);
+    const mat = new THREE.MeshPhongMaterial({
+        color: 0x222222,
+        emissive: 0xFFFF00,
+        emissiveIntensity: 2
+    }) // Highlighted yellow
     const marker = new THREE.Mesh(geo, mat);
     group.add(marker);
 
@@ -73,6 +106,35 @@ const Space = () => {
 
     return { marker, tle1, tle2 };
   }
+
+  function starlinkmarker(
+    name: string,
+    tle1: string,
+    tle2: string,
+    group: THREE.Group
+  ) {
+    const geo = new THREE.IcosahedronGeometry(0.005, 8);
+    const mat = new THREE.MeshPhongMaterial({
+        color: 0x222222,
+        emissive: 0x0118F9,
+        emissiveIntensity: 2
+    }) // Highlighted yellow
+    const marker = new THREE.Mesh(geo, mat);
+    group.add(marker);
+
+    // Add name label
+    const spriteMat = new THREE.SpriteMaterial({
+      map: createTextTexture(name),
+      transparent: true,
+    });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(0.2, 0.05, 0.2);
+    sprite.position.set(0, 0.03, 0);
+    marker.add(sprite);
+
+    return { marker, tle1, tle2 };
+  }
+
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -199,22 +261,6 @@ const Space = () => {
     const satelliteGroup = new THREE.Group();
     earthGroup.add(satelliteGroup); // Rotate the satellite group to match Earth's axial tilt
 
-    // // Create ISS marker
-    // const issGeo = new THREE.ConeGeometry(0.005,0.02)
-    // const issMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    // const issMarker = new THREE.Mesh(issGeo, issMat);
-    // satelliteGroup.add(issMarker); // Add the ISS marker to the satellite group // Add the ISS marker to the scene
-    // issMarker.position.set(0, 0, 0); // Initial position (will be updated later)
-
-    // const updateISS = () => {
-    //   const { lat, lon } = getISSLatLon(); // Get current ISS latitude and longitude
-    //   const [x, y, z] = positionf(lat, lon, 1.05); // Calculate the position vector using positionf function
-    //   issMarker.position.set(x,y,z); // Update the ISS marker position
-
-    //🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️🛰️
-
-    //Satellite markers
-
     const satelliteMarkers: THREE.Mesh[] = [];
     const searchedSatellites: {
       marker: THREE.Mesh;
@@ -247,6 +293,15 @@ const Space = () => {
       tle2: string
     ) => {
       const sat = addSearchedSatellite(name, tle1, tle2, satelliteGroup);
+      searchedSatellites.push(sat);
+    };
+
+    (window as any).starlinkAdder = (
+      name: string,
+      tle1: string,
+      tle2: string
+    ) => {
+      const sat = starlinkmarker(name, tle1, tle2, satelliteGroup);
       searchedSatellites.push(sat);
     };
 
@@ -283,12 +338,14 @@ const Space = () => {
       renderer.dispose();
       canvasRef.current?.removeChild(renderer.domElement);
     };
+    
   }, []);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100vh" }}>
       <div ref={canvasRef} style={{ width: "100%", height: "100%" }} />
       <SearchBar onSearch={handleSatelliteSearch} />
+      
     </div>
   );
 };
