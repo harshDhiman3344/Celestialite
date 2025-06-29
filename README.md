@@ -25,4 +25,4 @@ JSON formatted static data and API response.
 
 ## Live hosting 🕸️
 
-(WORK IN PROGRESS) 
+[VERCEL](https://celestialite.vercel.app/)
