@@ -7,7 +7,7 @@ import { positionf } from "./posFunc.ts";
 import { getSatPos } from "./getSatellitePosition.ts";
 import { tleData } from "./TLEdata/data.ts";
 import SearchBar from "../searchBar/searchbar.tsx";
-
+import YoutubeMusicPlayer from "../musicPlayer/youtubeMusicPlayer.tsx";
 function createTextTexture(text: string) {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
@@ -362,6 +362,7 @@ const Space = () => {
     <div style={{ position: "relative", width: "100%", height: "100vh" }}>
       <div ref={canvasRef} style={{ width: "100%", height: "100%" }} />
       <SearchBar onSearch={handleSatelliteSearch} />
+      <YoutubeMusicPlayer/>
     </div>
   );
 };
