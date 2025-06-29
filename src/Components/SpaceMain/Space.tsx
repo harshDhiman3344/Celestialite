@@ -287,8 +287,8 @@ const Space = () => {
       var geo = new THREE.IcosahedronGeometry(0.005, 8);
       var mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
       if(satelliteNames[index]=="ISS (ZARYA)"){
-        geo = new THREE.IcosahedronGeometry(0.05, 8);
-        mat = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+        geo = new THREE.IcosahedronGeometry(0.009, 3);
+        mat = new THREE.MeshBasicMaterial({ color: 0x66ff66 });
       }
       const marker = new THREE.Mesh(geo, mat);
       satelliteGroup.add(marker);
