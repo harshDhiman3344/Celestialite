@@ -284,8 +284,12 @@ const Space = () => {
     const satelliteNames: string[] = tleData.map((sat) => sat.name); // Get names from tleData
 
     tleData.forEach((_satellite, index) => {
-      const geo = new THREE.IcosahedronGeometry(0.005, 8);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      var geo = new THREE.IcosahedronGeometry(0.005, 8);
+      var mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      if(satelliteNames[index]=="ISS (ZARYA)"){
+        geo = new THREE.IcosahedronGeometry(0.05, 8);
+        mat = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+      }
       const marker = new THREE.Mesh(geo, mat);
       satelliteGroup.add(marker);
       satelliteMarkers.push(marker);
