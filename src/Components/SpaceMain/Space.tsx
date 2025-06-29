@@ -49,7 +49,6 @@ async function fetchStarlinkTLEs() {
   return tleArray;
 }
 
-
 const Space = () => {
   const handleSatelliteSearch = async (name: string) => {
     const res = await fetch(
@@ -61,21 +60,21 @@ const Space = () => {
     if (data.member && data.member.length > 0) {
       const sat = data.member[0];
       console.log("Found satellite:", sat.name);
-     (window as any).handleSatelliteSearch(sat.name, sat.line1, sat.line2);
+      (window as any).handleSatelliteSearch(sat.name, sat.line1, sat.line2);
     } else {
       console.log("Not found");
     }
   };
 
   const addStarlinkSatellites = async () => {
-  const starlinks = await fetchStarlinkTLEs();
-  starlinks.slice(0, 50).forEach((sat) => {
-    (window as any).starlinkAdder(sat.name, sat.line1, sat.line2);
-  });
-  console.log(`✅ Added ${starlinks.length} Starlink satellites`);
-};
+    const starlinks = await fetchStarlinkTLEs();
+    starlinks.slice(0, 50).forEach((sat) => {
+      (window as any).starlinkAdder(sat.name, sat.line1, sat.line2);
+    });
+    console.log(`✅ Added ${starlinks.length} Starlink satellites`);
+  };
 
-  addStarlinkSatellites()
+  addStarlinkSatellites();
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -87,10 +86,10 @@ const Space = () => {
   ) {
     const geo = new THREE.IcosahedronGeometry(0.008, 8);
     const mat = new THREE.MeshPhongMaterial({
-        color: 0x222222,
-        emissive: 0xFFFF00,
-        emissiveIntensity: 2
-    }) // Highlighted yellow
+      color: 0x222222,
+      emissive: 0xffff00,
+      emissiveIntensity: 2,
+    }); // Highlighted yellow
     const marker = new THREE.Mesh(geo, mat);
     group.add(marker);
 
@@ -115,10 +114,10 @@ const Space = () => {
   ) {
     const geo = new THREE.IcosahedronGeometry(0.005, 8);
     const mat = new THREE.MeshPhongMaterial({
-        color: 0x222222,
-        emissive: 0x0118F9,
-        emissiveIntensity: 2
-    }) // Highlighted yellow
+      color: 0x222222,
+      emissive: 0x0118f9,
+      emissiveIntensity: 2,
+    }); // Highlighted yellow
     const marker = new THREE.Mesh(geo, mat);
     group.add(marker);
 
@@ -134,7 +133,6 @@ const Space = () => {
 
     return { marker, tle1, tle2 };
   }
-
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -236,26 +234,42 @@ const Space = () => {
     // Earth radius
     const radius = 1; // Same as the Earth's radius in Three.js model
 
-    const lat = 28.6139;
-    const lon = 77.209;
+    //Get User's Location
 
-    // Using the positionf function to get the position
-    const markerPosition = positionf(lat, lon, radius);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(success, error);
+    } else {
+      console.log("Geolocation not supported");
+    }
 
-    // Create marker geometry and material
-    const markerGeometry = new THREE.SphereGeometry(0.01, 8, 8); // Small sphere as marker
-    const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color for marker
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    
 
-    // Set marker position
-    marker.position.set(
-      markerPosition[0],
-      markerPosition[1],
-      markerPosition[2]
-    );
+    function success(userPos: { coords: { latitude: any; longitude: any } }) {
+      const latitude = userPos.coords.latitude;
+      const longitude = userPos.coords.longitude;
+      console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
 
-    // Add marker to the markerGroup
-    markerGroup.add(marker);
+      const markerPosition = positionf(latitude, longitude, radius);
+
+      // Create marker geometry and material
+      const markerGeometry = new THREE.SphereGeometry(0.01, 8, 8); // Small sphere as marker
+      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color for marker
+      const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+
+      // Set marker position
+      marker.position.set(
+        markerPosition[0],
+        markerPosition[1],
+        markerPosition[2]
+      );
+
+      // Add marker to the markerGroup
+      markerGroup.add(marker);
+    }
+
+    function error() {
+      console.log("Unable to retrieve your location");
+    }
 
     //SATELLITE GROUP
     const satelliteGroup = new THREE.Group();
@@ -338,21 +352,14 @@ const Space = () => {
       renderer.dispose();
       canvasRef.current?.removeChild(renderer.domElement);
     };
-    
   }, []);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100vh" }}>
       <div ref={canvasRef} style={{ width: "100%", height: "100%" }} />
       <SearchBar onSearch={handleSatelliteSearch} />
-      
     </div>
   );
 };
 
 export default Space;
-
-
-
-
-
