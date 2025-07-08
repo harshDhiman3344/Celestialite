@@ -8,7 +8,7 @@ import { getSatPos } from "./getSatellitePosition.ts";
 import { tleData } from "./TLEdata/data.ts";
 import SearchBar from "../searchBar/searchbar.tsx";
 import YoutubeMusicPlayer from "../musicPlayer/youtubeMusicPlayer.tsx";
-import Toast from "../Toast/toast.tsx";
+import Toast from "../Toast/Toast.tsx";
 import { useState } from "react";
 
 function createTextTexture(text: string) {
