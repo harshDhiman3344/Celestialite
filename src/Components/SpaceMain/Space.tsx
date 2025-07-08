@@ -8,6 +8,9 @@ import { getSatPos } from "./getSatellitePosition.ts";
 import { tleData } from "./TLEdata/data.ts";
 import SearchBar from "../searchBar/searchbar.tsx";
 import YoutubeMusicPlayer from "../musicPlayer/youtubeMusicPlayer.tsx";
+import Toast from "../Toast/toast.tsx";
+import { useState } from "react";
+
 function createTextTexture(text: string) {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
@@ -50,19 +53,27 @@ async function fetchStarlinkTLEs() {
 }
 
 const Space = () => {
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+    timestamp: number;
+  } | null>(null);
+
   const handleSatelliteSearch = async (name: string) => {
     const res = await fetch(
       `https://tle.ivanstanojevic.me/api/tle?search=${encodeURIComponent(name)}`
     );
     const data = await res.json();
 
-    // Corrected: 'memer' should be 'member'
+ 
     if (data.member && data.member.length > 0) {
       const sat = data.member[0];
       console.log("Found satellite:", sat.name);
+      setToast({ message: `Found: ${sat.name}`, type: "success",timestamp: Date.now() });
       (window as any).handleSatelliteSearch(sat.name, sat.line1, sat.line2);
     } else {
       console.log("Not found");
+      setToast({ message: "Satellite not found", type: "error" ,timestamp: Date.now()});
     }
   };
 
@@ -133,6 +144,8 @@ const Space = () => {
 
     return { marker, tle1, tle2 };
   }
+
+  //toast
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -242,8 +255,6 @@ const Space = () => {
       console.log("Geolocation not supported");
     }
 
-    
-
     function success(userPos: { coords: { latitude: any; longitude: any } }) {
       const latitude = userPos.coords.latitude;
       const longitude = userPos.coords.longitude;
@@ -286,7 +297,7 @@ const Space = () => {
     tleData.forEach((_satellite, index) => {
       var geo = new THREE.IcosahedronGeometry(0.005, 8);
       var mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      if(satelliteNames[index]=="ISS (ZARYA)"){
+      if (satelliteNames[index] == "ISS (ZARYA)") {
         geo = new THREE.IcosahedronGeometry(0.009, 3);
         mat = new THREE.MeshBasicMaterial({ color: 0x66ff66 });
       }
@@ -360,11 +371,16 @@ const Space = () => {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100vh" }}>
+      {toast && <Toast key={toast.timestamp} message={toast.message} type={toast.type} />}
+
       <div ref={canvasRef} style={{ width: "100%", height: "100%" }} />
       <SearchBar onSearch={handleSatelliteSearch} />
-      <YoutubeMusicPlayer/>
+      <YoutubeMusicPlayer />
     </div>
   );
 };
 
 export default Space;
+
+
+
